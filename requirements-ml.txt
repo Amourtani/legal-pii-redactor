@@ -1,0 +1,10 @@
+-r requirements.txt
+accelerate>=0.27
+datasets>=2.18
+numpy>=1.26
+onnx>=1.15
+onnxruntime>=1.17
+optimum[onnxruntime]>=1.17
+seqeval>=1.2
+torch>=2.1
+transformers>=4.38

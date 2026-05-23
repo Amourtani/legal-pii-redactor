@@ -1,0 +1,6 @@
+{
+  "base_url": "https://api.openai.com/v1",
+  "api_key": "replace-with-your-api-key",
+  "model": "replace-with-your-strong-model",
+  "timeout": 120
+}

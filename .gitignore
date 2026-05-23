@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.pyc
+
+# Local IDE/editor state
+.idea/
+.vscode/
+
+# Secrets and local configuration
+.env
+.env.*
+config/*.json
+!config/*.example.json
+
+# Generated data and model artifacts
+data/generated/
+models/
+
+# Runtime logs
+*.log
+uvicorn.*.log
+
+tests
