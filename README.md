@@ -10,6 +10,10 @@
 - 脱敏输出：返回脱敏文本、命中实体、风险等级和是否需要人工复核。
 - 训练闭环：用 OpenAI-compatible 强模型生成合成训练数据，本地训练 NER，导出 ONNX，INT8 量化后用 FastAPI 服务推理。
 
+## 效果预览
+
+![脱敏接口请求结果](docs/images/desensitize-response.png)
+
 ## 项目结构
 
 ```text
