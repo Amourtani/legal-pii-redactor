@@ -2,7 +2,6 @@
 
 中文法律文本脱敏工具，面向合同生成、案例展示、法律咨询记录和证据材料等场景。项目采用“规则引擎 + 法律 NER 小模型 + ONNX CPU 推理”的方式，目标是在本地 CPU 上实现秒级响应。
 
-建议 GitHub 仓库名：`legal-pii-redactor`。
 
 ## 能做什么
 
@@ -37,7 +36,20 @@ tests/
 
 推荐 Python 3.11。
 
+Windows PowerShell:
+
 ```powershell
+conda create --name legal-pii-redactor python=3.11
+conda activate legal-pii-redactor
+
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-ml.txt
+python -m pytest tests -q
+```
+
+Linux/macOS Bash:
+
+```bash
 conda create --name legal-pii-redactor python=3.11
 conda activate legal-pii-redactor
 
@@ -50,11 +62,11 @@ python -m pytest tests -q
 
 规则版不需要训练模型，适合先验证 API。
 
-```powershell
+```bash
 uvicorn app.api:app --host 127.0.0.1 --port 8000
 ```
 
-测试请求：
+Windows PowerShell 测试请求：
 
 ```powershell
 $body = @{
@@ -69,12 +81,28 @@ Invoke-RestMethod -Method Post `
   -Body $body
 ```
 
+Linux/macOS Bash 测试请求：
+
+```bash
+curl -X POST "http://127.0.0.1:8000/desensitize" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"text":"原告张三，身份证号110101199001011234，电话13800138000，车牌浙A·B5678。","mode":"case_display","strict_level":"high"}'
+```
+
 ## 2. 配置强模型
 
-真实配置不能提交到 git。先复制模板：
+真实配置不能提交到 git。先复制模板。
+
+Windows PowerShell:
 
 ```powershell
 Copy-Item config/llm.example.json config/llm.json
+```
+
+Linux/macOS Bash:
+
+```bash
+cp config/llm.example.json config/llm.json
 ```
 
 编辑 `config/llm.json`：
@@ -88,12 +116,20 @@ Copy-Item config/llm.example.json config/llm.json
 }
 ```
 
-`config/llm.json` 已被 `.gitignore` 忽略。也可以用环境变量临时覆盖：
+Windows PowerShell:
 
 ```powershell
 $env:LLM_BASE_URL="https://api.openai.com/v1"
 $env:LLM_API_KEY="your-key"
 $env:LLM_MODEL="your-model"
+```
+
+Linux/macOS Bash:
+
+```bash
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_API_KEY="your-key"
+export LLM_MODEL="your-model"
 ```
 
 ## 3. 生成训练数据
@@ -112,7 +148,9 @@ $env:LLM_MODEL="your-model"
 {"text":"原告张三，电话13800138000。","entities":[{"start":2,"end":4,"label":"PERSON_PARTY"},{"start":7,"end":18,"label":"PHONE"}]}
 ```
 
-推荐第一轮生成 1 万到 1.5 万条：
+推荐第一轮生成 1 万到 1.5 万条。
+
+Windows PowerShell:
 
 ```powershell
 python -m train.generate_synthetic `
@@ -144,9 +182,41 @@ python -m train.generate_synthetic `
   --max-batches 600
 ```
 
+Linux/macOS Bash:
+
+```bash
+python -m train.generate_synthetic \
+  --count 8000 \
+  --batch-size 20 \
+  --mode case_display \
+  --output data/generated/legal_ner.train.jsonl \
+  --max-batches 800
+
+python -m train.generate_synthetic \
+  --count 1000 \
+  --batch-size 20 \
+  --mode case_display \
+  --output data/generated/legal_ner.dev.jsonl \
+  --max-batches 120
+
+python -m train.generate_synthetic \
+  --count 1000 \
+  --batch-size 20 \
+  --mode case_display \
+  --output data/generated/legal_ner.test.jsonl \
+  --max-batches 120
+
+python -m train.generate_synthetic \
+  --count 5000 \
+  --batch-size 20 \
+  --mode contract_generation \
+  --output data/generated/legal_ner.contract.jsonl \
+  --max-batches 600
+```
+
 校验数据：
 
-```powershell
+```bash
 python -m train.validate_dataset data/generated/legal_ner.train.jsonl
 python -m train.validate_dataset data/generated/legal_ner.dev.jsonl
 python -m train.validate_dataset data/generated/legal_ner.test.jsonl
@@ -169,7 +239,9 @@ python -m train.validate_dataset data/generated/legal_ner.contract.jsonl
 
 ## 5. 训练 NER
 
-合并训练集：
+合并训练集。
+
+Windows PowerShell:
 
 ```powershell
 Get-Content data/generated/legal_ner.train.jsonl, data/generated/legal_ner.contract.jsonl `
@@ -178,7 +250,18 @@ Get-Content data/generated/legal_ner.train.jsonl, data/generated/legal_ner.contr
 python -m train.validate_dataset data/generated/legal_ner.mixed.train.jsonl
 ```
 
-训练 CPU 友好的小模型：
+Linux/macOS Bash:
+
+```bash
+cat data/generated/legal_ner.train.jsonl data/generated/legal_ner.contract.jsonl \
+  > data/generated/legal_ner.mixed.train.jsonl
+
+python -m train.validate_dataset data/generated/legal_ner.mixed.train.jsonl
+```
+
+训练 CPU 友好的小模型。
+
+Windows PowerShell:
 
 ```powershell
 python -m train.train_ner `
@@ -190,7 +273,21 @@ python -m train.train_ner `
   --batch-size 16
 ```
 
-如果有 NVIDIA GPU，可尝试：
+Linux/macOS Bash:
+
+```bash
+python -m train.train_ner \
+  --train-file data/generated/legal_ner.mixed.train.jsonl \
+  --dev-file data/generated/legal_ner.dev.jsonl \
+  --base-model uer/chinese_roberta_L-2_H-128 \
+  --output-dir models/legal-ner-v1 \
+  --epochs 10 \
+  --batch-size 16
+```
+
+如果有 NVIDIA GPU，可尝试更强模型。
+
+Windows PowerShell:
 
 ```powershell
 python -m train.train_ner `
@@ -202,7 +299,21 @@ python -m train.train_ner `
   --batch-size 16
 ```
 
+Linux/macOS Bash:
+
+```bash
+python -m train.train_ner \
+  --train-file data/generated/legal_ner.mixed.train.jsonl \
+  --dev-file data/generated/legal_ner.dev.jsonl \
+  --base-model hfl/chinese-macbert-base \
+  --output-dir models/legal-ner-macbert \
+  --epochs 5 \
+  --batch-size 16
+```
+
 ## 6. 导出和量化
+
+Windows PowerShell:
 
 ```powershell
 python -m train.export_onnx `
@@ -214,16 +325,37 @@ python -m train.quantize_onnx `
   --output-dir models/legal-ner-v1-onnx-int8
 ```
 
+Linux/macOS Bash:
+
+```bash
+python -m train.export_onnx \
+  --model-dir models/legal-ner-v1 \
+  --output models/legal-ner-v1-onnx
+
+python -m train.quantize_onnx \
+  --onnx-dir models/legal-ner-v1-onnx \
+  --output-dir models/legal-ner-v1-onnx-int8
+```
+
 导出时看到 `TracerWarning` 或量化时看到 preprocessing warning 通常不是失败。确认 `model.onnx` 存在即可。
 
 ## 7. 启用 NER 模型
+
+Windows PowerShell:
 
 ```powershell
 $env:NER_MODEL_DIR="models/legal-ner-v1-onnx-int8"
 uvicorn app.api:app --host 127.0.0.1 --port 8000
 ```
 
-测试：
+Linux/macOS Bash:
+
+```bash
+export NER_MODEL_DIR="models/legal-ner-v1-onnx-int8"
+uvicorn app.api:app --host 127.0.0.1 --port 8000
+```
+
+Windows PowerShell 测试：
 
 ```powershell
 $body = @{
@@ -236,6 +368,14 @@ Invoke-RestMethod -Method Post `
   -Uri "http://127.0.0.1:8000/desensitize" `
   -ContentType "application/json; charset=utf-8" `
   -Body $body
+```
+
+Linux/macOS Bash 测试：
+
+```bash
+curl -X POST "http://127.0.0.1:8000/desensitize" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"text":"原告张三委托王律师处理案件，联系电话13800138000，住北京市朝阳区建国路88号。","mode":"case_display","strict_level":"high"}'
 ```
 
 ## 实体标签
