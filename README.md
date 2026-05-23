@@ -378,6 +378,78 @@ curl -X POST "http://127.0.0.1:8000/desensitize" \
   -d '{"text":"原告张三委托王律师处理案件，联系电话13800138000，住北京市朝阳区建国路88号。","mode":"case_display","strict_level":"high"}'
 ```
 
+## 8. Docker 部署
+
+Docker 镜像只打包服务代码和 CPU 推理依赖，不打包训练依赖、私密配置、模型文件和生成数据。部署时从宿主机挂载：
+
+- `config/`：放 `llm.json` 等本地配置，镜像内路径 `/app/config`。
+- `models/legal-ner-v1-onnx-int8/`：放 ONNX INT8 模型，镜像内路径 `/app/models/legal-ner-v1-onnx-int8`。
+- `data/`：放示例数据、生成数据或评测数据，镜像内路径 `/app/data`。纯 API 推理不依赖数据集。
+
+模型目录至少应包含：
+
+```text
+model.onnx
+config.json
+tokenizer.json
+tokenizer_config.json
+special_tokens_map.json
+vocab.txt
+```
+
+构建镜像：
+
+```bash
+docker build -t legal-pii-redactor:latest .
+```
+
+只跑规则版，不加载 NER 模型：
+
+```bash
+docker run --rm -p 8000:8000 legal-pii-redactor:latest
+```
+
+加载 NER 模型部署。
+
+Windows PowerShell:
+
+```powershell
+$project = (Get-Location).Path
+
+docker run --rm -p 8000:8000 `
+  -e NER_MODEL_DIR="/app/models/legal-ner-v1-onnx-int8" `
+  -v "${project}\config:/app/config:ro" `
+  -v "${project}\models\legal-ner-v1-onnx-int8:/app/models/legal-ner-v1-onnx-int8:ro" `
+  -v "${project}\data:/app/data:ro" `
+  legal-pii-redactor:latest
+```
+
+Linux/macOS Bash:
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e NER_MODEL_DIR=/app/models/legal-ner-v1-onnx-int8 \
+  -v "$PWD/config:/app/config:ro" \
+  -v "$PWD/models/legal-ner-v1-onnx-int8:/app/models/legal-ner-v1-onnx-int8:ro" \
+  -v "$PWD/data:/app/data:ro" \
+  legal-pii-redactor:latest
+```
+
+如果后续扩展镜像在容器内生成或评测数据集，把 `data` 挂载去掉 `:ro`：
+
+```bash
+docker run --rm -it \
+  -v "$PWD/config:/app/config:ro" \
+  -v "$PWD/data:/app/data" \
+  legal-pii-redactor:latest sh
+```
+
+部署检查：
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
 ## 实体标签
 
 ```text
