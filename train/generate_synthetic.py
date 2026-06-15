@@ -39,7 +39,7 @@ def generate_synthetic_dataset(
                 )
             batch_index += 1
             batch_count = min(batch_size, count - written)
-            prompt = build_generation_prompt(batch_count, mode)
+            prompt = build_generation_prompt(batch_count, mode, batch_index=batch_index)
             payload = client.generate(prompt)
             records, errors = parse_generated_records_lenient(payload)
             for error in errors[:20]:
