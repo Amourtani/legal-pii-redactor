@@ -31,6 +31,15 @@ def generate_synthetic_dataset(
     batch_index = 0
     max_batches = max_batches or max(10, ((count + batch_size - 1) // batch_size) * 5)
 
+    print(
+        "using LLM "
+        f"base_url={getattr(client, 'base_url', '<custom>')}, "
+        f"model={getattr(client, 'model', '<custom>')}, "
+        f"timeout={getattr(client, 'timeout', '<custom>')}s, "
+        f"max_retries={getattr(client, 'max_retries', '<custom>')}, "
+        f"retry_backoff={getattr(client, 'retry_backoff', '<custom>')}s"
+    )
+
     with temp_output.open("a", encoding="utf-8") as file:
         while written < count:
             if batch_index >= max_batches:
@@ -71,9 +80,28 @@ def main() -> None:
     parser.add_argument("--output", default="data/generated/legal_ner.jsonl")
     parser.add_argument("--append", action="store_true")
     parser.add_argument("--max-batches", type=int, default=0)
+    parser.add_argument("--timeout", type=int, default=None, help="Override config/llm.json timeout.")
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=None,
+        help="Override config/llm.json max_retries for timeout retries.",
+    )
+    parser.add_argument(
+        "--retry-backoff",
+        type=float,
+        default=None,
+        help="Override config/llm.json retry_backoff seconds.",
+    )
     args = parser.parse_args()
 
     client = OpenAICompatibleClient.from_config()
+    if args.timeout is not None:
+        client.timeout = args.timeout
+    if args.max_retries is not None:
+        client.max_retries = args.max_retries
+    if args.retry_backoff is not None:
+        client.retry_backoff = args.retry_backoff
     generate_synthetic_dataset(
         client=client,
         output=args.output,

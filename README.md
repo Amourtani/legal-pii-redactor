@@ -116,7 +116,9 @@ cp config/llm.example.json config/llm.json
   "base_url": "https://api.openai.com/v1",
   "api_key": "replace-with-your-api-key",
   "model": "replace-with-your-strong-model",
-  "timeout": 120
+  "timeout": 600,
+  "max_retries": 2,
+  "retry_backoff": 2.0
 }
 ```
 
@@ -134,6 +136,36 @@ Linux/macOS Bash:
 export LLM_BASE_URL="https://api.openai.com/v1"
 export LLM_API_KEY="your-key"
 export LLM_MODEL="your-model"
+```
+
+生成数据时会打印实际生效的 `base_url`、`model`、`timeout`、`max_retries`。如果配置为 `timeout: 600`，但错误日志显示 `elapsed` 约 180 秒就断开，通常是上游 API 网关或代理有更短的超时限制；这时优先减小 `--batch-size`，例如从 `20` 改为 `5` 或 `10`。
+
+也可以在命令行临时覆盖。
+
+Windows PowerShell:
+
+```powershell
+python -m train.generate_synthetic `
+  --count 100 `
+  --batch-size 10 `
+  --mode case_display `
+  --output data/generated/legal_ner.preview.jsonl `
+  --timeout 600 `
+  --max-retries 3 `
+  --retry-backoff 2
+```
+
+Linux/macOS Bash:
+
+```bash
+python -m train.generate_synthetic \
+  --count 100 \
+  --batch-size 10 \
+  --mode case_display \
+  --output data/generated/legal_ner.preview.jsonl \
+  --timeout 600 \
+  --max-retries 3 \
+  --retry-backoff 2
 ```
 
 ## 3. 生成训练数据

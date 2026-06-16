@@ -2,5 +2,7 @@
   "base_url": "https://api.openai.com/v1",
   "api_key": "replace-with-your-api-key",
   "model": "replace-with-your-strong-model",
-  "timeout": 360
+  "timeout": 600,
+  "max_retries": 2,
+  "retry_backoff": 2.0
 }
