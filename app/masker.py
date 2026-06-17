@@ -62,7 +62,19 @@ def _mask_person(value: str) -> str:
 
 
 def _mask_phone(value: str) -> str:
-    return value[:3] + "****" + value[-4:] if len(value) >= 11 else "***"
+    digits = re.sub(r"\D", "", value)
+    if len(digits) < 11:
+        return "***"
+
+    digit_index = 0
+    output = []
+    for char in value:
+        if not char.isdigit():
+            output.append(char)
+            continue
+        digit_index += 1
+        output.append("*" if 4 <= digit_index <= 7 else char)
+    return "".join(output)
 
 
 def _mask_id_card(value: str) -> str:

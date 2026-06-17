@@ -306,7 +306,8 @@ python -m train.train_ner `
   --base-model uer/chinese_roberta_L-2_H-128 `
   --output-dir models/legal-ner-v1 `
   --epochs 10 `
-  --batch-size 16
+  --batch-size 16 `
+  --device auto
 ```
 
 Linux/macOS Bash:
@@ -318,10 +319,50 @@ python -m train.train_ner \
   --base-model uer/chinese_roberta_L-2_H-128 \
   --output-dir models/legal-ner-v1 \
   --epochs 10 \
-  --batch-size 16
+  --batch-size 16 \
+  --device auto
 ```
 
-如果有 NVIDIA GPU，可尝试更强模型。
+如果有 NVIDIA GPU，先确认当前环境安装的是 CUDA 版 PyTorch。官方安装命令以 [PyTorch 安装页面](https://pytorch.org/get-started/locally/) 为准。
+
+Windows PowerShell:
+
+```powershell
+conda activate desensitization-ai
+
+python -m pip uninstall -y torch torchvision torchaudio
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+```
+
+Linux Bash:
+
+```bash
+conda activate desensitization-ai
+
+python -m pip uninstall -y torch torchvision torchaudio
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+```
+
+看到 `True` 和显卡名称后，再用 `--device cuda` 训练。如果 CUDA 不可用，脚本会直接报错，不会静默退回 CPU。
+
+GPU 训练小模型：
+
+```powershell
+python -m train.train_ner `
+  --train-file data/generated/legal_ner.mixed.train.jsonl `
+  --dev-file data/generated/legal_ner.dev.jsonl `
+  --base-model uer/chinese_roberta_L-2_H-128 `
+  --output-dir models/legal-ner-v1 `
+  --epochs 10 `
+  --batch-size 32 `
+  --device cuda
+```
+
+如果显存足够，可尝试更强模型。
 
 Windows PowerShell:
 
@@ -332,7 +373,8 @@ python -m train.train_ner `
   --base-model hfl/chinese-macbert-base `
   --output-dir models/legal-ner-macbert `
   --epochs 5 `
-  --batch-size 16
+  --batch-size 16 `
+  --device cuda
 ```
 
 Linux/macOS Bash:
@@ -344,7 +386,8 @@ python -m train.train_ner \
   --base-model hfl/chinese-macbert-base \
   --output-dir models/legal-ner-macbert \
   --epochs 5 \
-  --batch-size 16
+  --batch-size 16 \
+  --device cuda
 ```
 
 ## 6. 导出和量化

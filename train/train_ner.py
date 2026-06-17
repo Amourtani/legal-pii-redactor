@@ -17,9 +17,16 @@ def main() -> None:
     parser.add_argument("--output-dir", default="models/legal-ner")
     parser.add_argument("--epochs", type=float, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument(
+        "--device",
+        choices=["auto", "cuda", "cpu"],
+        default="auto",
+        help="Training device. Use cuda to fail fast when GPU is unavailable.",
+    )
     args = parser.parse_args()
 
     try:
+        import torch
         from datasets import Dataset
         from transformers import (
             AutoModelForTokenClassification,
@@ -30,6 +37,9 @@ def main() -> None:
         )
     except ImportError as exc:
         raise SystemExit("Install ML dependencies with: pip install -r requirements-ml.txt") from exc
+
+    device_message = resolve_device(args.device, torch)
+    print(f"training device: {device_message}")
 
     train_records = _load_records(Path(args.train_file))
     dev_records = _load_records(Path(args.dev_file)) if Path(args.dev_file).exists() else train_records[: max(1, len(train_records) // 10)]
@@ -78,6 +88,7 @@ def main() -> None:
         output_dir=args.output_dir,
         batch_size=args.batch_size,
         epochs=args.epochs,
+        device=args.device,
     )
     trainer = Trainer(
         model=model,
@@ -117,6 +128,7 @@ def build_training_arguments(
     output_dir: str,
     batch_size: int,
     epochs: float,
+    device: str = "auto",
 ) -> Any:
     kwargs: dict[str, Any] = {
         "output_dir": output_dir,
@@ -131,7 +143,35 @@ def build_training_arguments(
     strategy_arg = _evaluation_strategy_arg(training_arguments_cls)
     if strategy_arg:
         kwargs[strategy_arg] = "epoch"
+    device_kwargs = _device_kwargs(training_arguments_cls, device)
+    kwargs.update(device_kwargs)
     return training_arguments_cls(**kwargs)
+
+
+def resolve_device(device: str, torch_module: Any) -> str:
+    if device == "cuda":
+        if not torch_module.cuda.is_available():
+            raise SystemExit(
+                "CUDA is not available in this Python environment. "
+                "Install a CUDA-enabled PyTorch build, then rerun with --device cuda."
+            )
+        return f"cuda: {torch_module.cuda.get_device_name(0)}"
+    if device == "cpu":
+        return "cpu"
+    if torch_module.cuda.is_available():
+        return f"auto -> cuda: {torch_module.cuda.get_device_name(0)}"
+    return "auto -> cpu"
+
+
+def _device_kwargs(training_arguments_cls: type, device: str) -> dict[str, Any]:
+    if device != "cpu":
+        return {}
+    parameters = inspect.signature(training_arguments_cls.__init__).parameters
+    if "use_cpu" in parameters:
+        return {"use_cpu": True}
+    if "no_cuda" in parameters:
+        return {"no_cuda": True}
+    return {}
 
 
 def _evaluation_strategy_arg(training_arguments_cls: type) -> str | None:

@@ -7,7 +7,13 @@ from app.span import merge_entities
 
 
 class RuleDetector:
-    PHONE_RE = re.compile(r"(?<!\d)(?:1[3-9]\d{9}|0\d{2,3}[- ]?\d{7,8}(?:-\d{1,6})?)(?!\d)")
+    PHONE_RE = re.compile(
+        r"(?<![\d.-])(?:"
+        r"1[3-9]\d{9}|"
+        r"1[3-9]\d[- .]?\d{4}[- .]?\d{4}|"
+        r"0\d{2,3}[- ]?\d{7,8}(?:-\d{1,6})?"
+        r")(?![\d.-])"
+    )
     EMAIL_RE = re.compile(
         r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@"
         r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![A-Za-z0-9.-])"
