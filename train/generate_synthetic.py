@@ -76,7 +76,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate legal NER JSONL with a strong LLM.")
     parser.add_argument("--count", type=int, default=100)
     parser.add_argument("--batch-size", type=int, default=20)
-    parser.add_argument("--mode", choices=["case_display", "contract_generation"], default="case_display")
+    parser.add_argument(
+        "--mode",
+        choices=["case_display", "contract_generation", "general_redaction", "mixed_redaction"],
+        default="case_display",
+    )
     parser.add_argument("--output", default="data/generated/legal_ner.jsonl")
     parser.add_argument("--append", action="store_true")
     parser.add_argument("--max-batches", type=int, default=0)

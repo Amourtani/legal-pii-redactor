@@ -13,6 +13,7 @@ LABEL_PRIORITY = {
     "URL": 85,
     "PLATE": 80,
     "ADDRESS": 75,
+    "NAME": 72,
     "PERSON_MINOR": 75,
     "PERSON_PARTY": 70,
     "PERSON_VICTIM": 70,

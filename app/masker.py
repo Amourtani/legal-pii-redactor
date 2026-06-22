@@ -115,7 +115,17 @@ def _mask_org(value: str) -> str:
 
 def _risk_level(entities: list[Entity]) -> str:
     high_labels = {"ID_CARD", "BANK_CARD", "PERSON_MINOR", "HEALTH", "BUSINESS_SECRET"}
-    medium_labels = {"PHONE", "EMAIL", "ADDRESS", "PERSON_PARTY", "PERSON_VICTIM", "PERSON_WITNESS"}
+    medium_labels = {
+        "PHONE",
+        "EMAIL",
+        "IP",
+        "URL",
+        "ADDRESS",
+        "NAME",
+        "PERSON_PARTY",
+        "PERSON_VICTIM",
+        "PERSON_WITNESS",
+    }
     if any(entity.label in high_labels for entity in entities):
         return "high"
     if any(entity.label in medium_labels for entity in entities):
