@@ -186,6 +186,17 @@ python -m train.generate_synthetic \
 
 推荐第一轮生成 1 万到 1.5 万条。
 
+`--mode` 控制生成数据的场景侧重：
+
+| mode | 用途 | 适合场景 |
+|---|---|---|
+| `case_display` | 法律案例展示数据 | 案情摘要、庭审记录、证据材料、裁判摘要、执行调解 |
+| `contract_generation` | 合同生成数据 | 合同条款、履约往来、付款通知、补充协议、商业秘密 |
+| `general_redaction` | 通用脱敏数据 | 客服、电商、物流、医疗、教育、招聘、金融、出行、物业、账号安全 |
+| `mixed_redaction` | 法律 + 通用混合数据 | 正式训练推荐，用来避免模型只适应法律文本 |
+
+如果模型要用于合同和案例展示，同时还要处理普通业务文本，推荐训练集里加入 `mixed_redaction` 或 `general_redaction` 数据。`general_redaction` 主要补通用场景短板，`mixed_redaction` 更适合作为主训练集的一部分。
+
 Windows PowerShell:
 
 ```powershell
@@ -273,6 +284,23 @@ python -m train.validate_dataset data/generated/legal_ner.contract.jsonl
 
 如果模型训练后全预测 `O`，优先增加 epochs，例如从 3 提到 10 或 15。
 
+也可以使用 `--preset auto`，脚本会在训练开始前根据训练集条数、base model 和设备推导 `epochs`、`batch-size`、`learning-rate`、`warmup-ratio`。如果同时传入 `--epochs`、`--batch-size`、`--learning-rate` 或 `--warmup-ratio`，手动值优先生效。
+
+`--preset auto` 的大致规则：
+
+| base model | 数据量 | epochs | batch size | learning rate |
+|---|---:|---:|---:|---:|
+| `uer/chinese_roberta_L-2_H-128` | 10000-50000 | 8 | GPU 32 / CPU 16 | `3e-5` |
+| `uer/chinese_roberta_L-4_H-512` | 10000-50000 | 6 | GPU 16 / CPU 8 | `2e-5` |
+| `uer/chinese_roberta_L-4_H-512` | 50000+ | 4 | GPU 16 / CPU 8 | `2e-5` |
+| BERT/MacBERT base 类模型 | 50000+ | 3 | GPU 8 / CPU 4 | `2e-5` |
+
+`--learning-rate` 是学习率，控制每一步参数更新幅度。值太大容易训练不稳定，值太小会学得慢。小模型通常可用 `3e-5`，`uer/chinese_roberta_L-4_H-512` 和 BERT/MacBERT base 类模型建议从 `2e-5` 开始。
+
+`--warmup-ratio` 是学习率预热比例。比如 `--warmup-ratio 0.06` 表示前 6% 的训练 step 从较小学习率逐步升到目标学习率，后面再正常训练。较大模型建议 `0.05` 到 `0.1`，小模型可以用 `0` 到 `0.05`。
+
+使用 `--preset auto` 时通常不用手动设置这两个参数；如果手动传入，手动值会覆盖自动推导值。
+
 ## 5. 训练 NER
 
 合并训练集。
@@ -348,6 +376,31 @@ python -c "import torch; print(torch.__version__); print(torch.cuda.is_available
 ```
 
 看到 `True` 和显卡名称后，再用 `--device cuda` 训练。如果 CUDA 不可用，脚本会直接报错，不会静默退回 CPU。
+
+GPU 训练较大但 CPU 推理仍友好的模型，推荐先用 `uer/chinese_roberta_L-4_H-512`：
+
+```powershell
+python -m train.train_ner `
+  --train-file data/generated/legal_ner.mixed.train.jsonl `
+  --dev-file data/generated/legal_ner.dev.jsonl `
+  --base-model uer/chinese_roberta_L-4_H-512 `
+  --output-dir models/legal-ner-roberta-l4-h512 `
+  --preset auto `
+  --device cuda
+```
+
+如果显存吃紧，可以覆盖 batch size：
+
+```powershell
+python -m train.train_ner `
+  --train-file data/generated/legal_ner.mixed.train.jsonl `
+  --dev-file data/generated/legal_ner.dev.jsonl `
+  --base-model uer/chinese_roberta_L-4_H-512 `
+  --output-dir models/legal-ner-roberta-l4-h512 `
+  --preset auto `
+  --batch-size 8 `
+  --device cuda
+```
 
 GPU 训练小模型：
 
