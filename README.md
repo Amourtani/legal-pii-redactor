@@ -540,9 +540,10 @@ vocab.txt
 docker build -t legal-pii-redactor:latest .
 ```
 
-Dockerfile 默认使用清华 PyPI 镜像源加速依赖安装：
+Dockerfile 默认使用清华 Debian apt 镜像和 PyPI 镜像源加速依赖安装：
 
 ```text
+http://mirrors.tuna.tsinghua.edu.cn
 https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
@@ -552,6 +553,7 @@ Windows PowerShell:
 
 ```powershell
 docker build `
+  --build-arg APT_MIRROR=http://mirrors.aliyun.com `
   --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple `
   --build-arg PIP_TRUSTED_HOST=mirrors.aliyun.com `
   -t legal-pii-redactor:latest .
@@ -561,6 +563,7 @@ Linux/macOS Bash:
 
 ```bash
 docker build \
+  --build-arg APT_MIRROR=http://mirrors.aliyun.com \
   --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
   --build-arg PIP_TRUSTED_HOST=mirrors.aliyun.com \
   -t legal-pii-redactor:latest .

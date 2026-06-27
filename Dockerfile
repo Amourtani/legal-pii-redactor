@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-ARG APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
+ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn
 ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ARG PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
 
