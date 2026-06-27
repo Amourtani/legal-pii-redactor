@@ -576,7 +576,7 @@ Windows PowerShell:
 ```powershell
 $project = (Get-Location).Path
 
-docker run --rm -p 8000:8000 `
+docker run -d --name legal-pii-redactor -p 8000:8000 `
   -v "${project}:/app" `
   legal-pii-redactor:latest
 ```
@@ -584,7 +584,7 @@ docker run --rm -p 8000:8000 `
 Linux/macOS Bash:
 
 ```bash
-docker run --rm -p 8000:8000 \
+docker run -d --name legal-pii-redactor -p 8000:8000 \
   -v "$PWD:/app" \
   legal-pii-redactor:latest
 ```
@@ -596,7 +596,7 @@ Windows PowerShell:
 ```powershell
 $project = (Get-Location).Path
 
-docker run --rm -p 8000:8000 `
+docker run -d --name legal-pii-redactor -p 8000:8000 `
   -e NER_MODEL_DIR="/app/models/legal-ner-v1-onnx-int8" `
   -v "${project}:/app" `
   legal-pii-redactor:latest
@@ -605,10 +605,10 @@ docker run --rm -p 8000:8000 `
 Linux/macOS Bash:
 
 ```bash
-docker run --rm -p 8000:8000 \
-  -e NER_MODEL_DIR=/app/models/legal-ner-v1-onnx-int8 \
+docker run -d --name legal-pii-redactor -p 12345:8000 \
+  -e NER_MODEL_DIR=/app/models/legal-ner-v5-onnx-int8 \
   -v "$PWD:/app" \
-  legal-pii-redactor:latest
+  legal-pii-redactor:1.0
 ```
 
 如果要进入容器检查配置或模型路径：
@@ -625,15 +625,23 @@ docker run --rm -it \
 curl http://127.0.0.1:8000/health
 ```
 
+查看日志和停止服务：
+
+```bash
+docker logs -f legal-pii-redactor
+docker stop legal-pii-redactor
+docker rm legal-pii-redactor
+```
+
 更新代码、配置或模型：
 
 由于容器挂载的是整个项目目录，普通代码、`config/llm.json`、`models/`、`data/` 的更新不需要重新构建镜像，只需要重启容器。服务进程启动后不会自动重新加载 Python 代码或 ONNX 模型。
 
 ```bash
-docker restart <container_name_or_id>
+docker restart legal-pii-redactor
 ```
 
-如果容器是用 `--rm` 启动的，停止后重新执行 `docker run` 即可。
+如果要从规则版切换到 NER 模型版，或修改 `NER_MODEL_DIR` 这类启动环境变量，需要先删除旧容器再重新 `docker run`。
 
 只有下面这些变化需要重新构建镜像：
 
