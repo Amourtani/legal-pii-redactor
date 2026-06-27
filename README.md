@@ -540,6 +540,32 @@ vocab.txt
 docker build -t legal-pii-redactor:latest .
 ```
 
+Dockerfile 默认使用清华 PyPI 镜像源加速依赖安装：
+
+```text
+https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+如果需要换成其他源，可以构建时覆盖：
+
+Windows PowerShell:
+
+```powershell
+docker build `
+  --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple `
+  --build-arg PIP_TRUSTED_HOST=mirrors.aliyun.com `
+  -t legal-pii-redactor:latest .
+```
+
+Linux/macOS Bash:
+
+```bash
+docker build \
+  --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
+  --build-arg PIP_TRUSTED_HOST=mirrors.aliyun.com \
+  -t legal-pii-redactor:latest .
+```
+
 只跑规则版，不加载 NER 模型：
 
 Windows PowerShell:
@@ -594,6 +620,25 @@ docker run --rm -it \
 
 ```bash
 curl http://127.0.0.1:8000/health
+```
+
+更新代码、配置或模型：
+
+由于容器挂载的是整个项目目录，普通代码、`config/llm.json`、`models/`、`data/` 的更新不需要重新构建镜像，只需要重启容器。服务进程启动后不会自动重新加载 Python 代码或 ONNX 模型。
+
+```bash
+docker restart <container_name_or_id>
+```
+
+如果容器是用 `--rm` 启动的，停止后重新执行 `docker run` 即可。
+
+只有下面这些变化需要重新构建镜像：
+
+```text
+Dockerfile 改了
+requirements.txt 改了
+requirements-runtime.txt 改了
+Python 版本或系统依赖改了
 ```
 
 ## 实体标签
