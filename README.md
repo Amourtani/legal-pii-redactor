@@ -512,11 +512,16 @@ curl -X POST "http://127.0.0.1:8000/desensitize" \
 
 ## 8. Docker 部署
 
-Docker 镜像只打包服务代码和 CPU 推理依赖，不打包训练依赖、私密配置、模型文件和生成数据。部署时从宿主机挂载：
+Docker 镜像只安装 API 和 CPU 推理依赖，不把项目代码、私密配置、模型文件和生成数据打进镜像。运行容器时直接把当前项目目录挂载到 `/app`：
 
-- `config/`：放 `llm.json` 等本地配置，镜像内路径 `/app/config`。
-- `models/legal-ner-v1-onnx-int8/`：放 ONNX INT8 模型，镜像内路径 `/app/models/legal-ner-v1-onnx-int8`。
-- `data/`：放示例数据、生成数据或评测数据，镜像内路径 `/app/data`。纯 API 推理不依赖数据集。
+```text
+宿主机项目目录  ->  容器 /app
+config/        ->  /app/config
+models/        ->  /app/models
+data/          ->  /app/data
+```
+
+这样 `config/llm.json`、`models/`、`data/` 都保留在宿主机项目目录里，更新模型或配置不需要重新构建镜像。
 
 模型目录至少应包含：
 
@@ -537,8 +542,22 @@ docker build -t legal-pii-redactor:latest .
 
 只跑规则版，不加载 NER 模型：
 
+Windows PowerShell:
+
+```powershell
+$project = (Get-Location).Path
+
+docker run --rm -p 8000:8000 `
+  -v "${project}:/app" `
+  legal-pii-redactor:latest
+```
+
+Linux/macOS Bash:
+
 ```bash
-docker run --rm -p 8000:8000 legal-pii-redactor:latest
+docker run --rm -p 8000:8000 \
+  -v "$PWD:/app" \
+  legal-pii-redactor:latest
 ```
 
 加载 NER 模型部署。
@@ -550,9 +569,7 @@ $project = (Get-Location).Path
 
 docker run --rm -p 8000:8000 `
   -e NER_MODEL_DIR="/app/models/legal-ner-v1-onnx-int8" `
-  -v "${project}\config:/app/config:ro" `
-  -v "${project}\models\legal-ner-v1-onnx-int8:/app/models/legal-ner-v1-onnx-int8:ro" `
-  -v "${project}\data:/app/data:ro" `
+  -v "${project}:/app" `
   legal-pii-redactor:latest
 ```
 
@@ -561,18 +578,15 @@ Linux/macOS Bash:
 ```bash
 docker run --rm -p 8000:8000 \
   -e NER_MODEL_DIR=/app/models/legal-ner-v1-onnx-int8 \
-  -v "$PWD/config:/app/config:ro" \
-  -v "$PWD/models/legal-ner-v1-onnx-int8:/app/models/legal-ner-v1-onnx-int8:ro" \
-  -v "$PWD/data:/app/data:ro" \
+  -v "$PWD:/app" \
   legal-pii-redactor:latest
 ```
 
-如果后续扩展镜像在容器内生成或评测数据集，把 `data` 挂载去掉 `:ro`：
+如果要进入容器检查配置或模型路径：
 
 ```bash
 docker run --rm -it \
-  -v "$PWD/config:/app/config:ro" \
-  -v "$PWD/data:/app/data" \
+  -v "$PWD:/app" \
   legal-pii-redactor:latest sh
 ```
 
